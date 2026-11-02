@@ -1,63 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Mahjong Animations</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahjong Meld Animations</title>
     <style>
-        body { background: #111; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
-        #animation-box { font-size: 48px; margin-top: 20px; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .container {
+            padding: 2rem;
+            border-radius: 12px;
+            background: #161b22;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #58a6ff;
+        }
+        #status {
+            font-size: 1rem;
+            color: #8b949e;
+            margin-bottom: 1.5rem;
+        }
+        #animation-box {
+            font-size: 1.8rem;
+            font-weight: bold;
+            padding: 20px;
+            border: 2px dashed #30363d;
+            border-radius: 8px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0d1117;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
-    <h1>Waiting for Mahjong Meld...</h1>
-    <div id="animation-box">💤</div>
+    <div class="container">
+        <h1>Mahjong Tile Receiver</h1>
+        <p id="status">Listening for melds from Adafruit IO...</p>
+        <div id="animation-box">Waiting for tiles...</div>
+    </div>
 
     <script>
-    const AIO_USERNAME = "fiorante";
-    const AIO_FEED = "mahjong-meld";
+        const AIO_USERNAME = "fiorante";
+        const AIO_FEED = "mahjong-meld";
+        
+        let lastProcessedTimestamp = null;
 
-    async function checkFeed() {
-        try {
-            // Public endpoint URL - no API key header required
-            let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            let data = await response.json();
-            let latestValue = data.value;
-            console.log("Latest feed value:", latestValue);
+        async function checkFeed() {
+            try {
+                // Public endpoint URL - no API key required
+                let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                let data = await response.json();
+                let latestValue = data.value;
+                let timestamp = data.created_at;
 
-            if (latestValue === "pung") {
-                triggerPungAnimation();
-            } else if (latestValue === "chow") {
-                triggerChowAnimation();
+                // Only trigger the animation if a new data timestamp is detected
+                if (timestamp !== lastProcessedTimestamp) {
+                    lastProcessedTimestamp = timestamp;
+                    console.log("New meld received:", latestValue);
+
+                    if (latestValue === "pung") {
+                        triggerPungAnimation();
+                    } else if (latestValue === "chow") {
+                        triggerChowAnimation();
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching feed:", error);
             }
-        } catch (error) {
-            console.error("Error fetching feed:", error);
         }
-    }
 
-    function triggerPungAnimation() {
-        document.getElementById("animation-box").innerHTML = "🔥 PUNG! THREE OF A KIND! 🔥";
-        // Place your custom animation trigger here
-    }
-
-    function triggerChowAnimation() {
-        document.getElementById("animation-box").innerHTML = "✨ CHOW! SEQUENCE! ✨";
-        // Place your custom animation trigger here
-    }
-
-    // Poll Adafruit IO every 2 seconds
-    setInterval(checkFeed, 2000);
-</script>
         function triggerPungAnimation() {
-            document.getElementById("animation-box").innerHTML = "🔥 PUNG! THREE OF A KIND! 🔥";
-            // Add your custom animation code here
+            const box = document.getElementById("animation-box");
+            box.innerHTML = "🔥 PUNG! (Three of a Kind) 🔥";
+            box.style.borderColor = "#f85149";
+            box.style.color = "#f85149";
         }
 
         function triggerChowAnimation() {
-            document.getElementById("animation-box").innerHTML = "✨ CHOW! SEQUENCE! ✨";
-            // Add your custom animation code here
+            const box = document.getElementById("animation-box");
+            box.innerHTML = "✨ CHOW! (Sequence) ✨";
+            box.style.borderColor = "#3fb950";
+            box.style.color = "#3fb950";
         }
 
         // Poll Adafruit IO every 2 seconds
