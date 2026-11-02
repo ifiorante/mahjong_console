@@ -12,31 +12,44 @@
     <div id="animation-box">💤</div>
 
     <script>
-        const AIO_USERNAME = "fiorante";
-        const AIO_FEED = "mahjong-meld";
-        const AIO_KEY = "aio_gtKG48RzMMl4gKES3uhU3XdJi0wF"; // Note: For production public feeds, keys can be omitted, but keeping it ensures access.
+    const AIO_USERNAME = "fiorante";
+    const AIO_FEED = "mahjong-meld";
 
-        async function checkFeed() {
-            try {
-                let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`, {
-                    headers: { 'X-AIO-Key': AIO_KEY }
-                });
-                let data = await response.json();
-                
-                // Check the latest value sent to Adafruit IO
-                let latestValue = data.value;
-                console.log("Latest feed value:", latestValue);
-
-                if (latestValue === "pung") {
-                    triggerPungAnimation();
-                } else if (latestValue === "chow") {
-                    triggerChowAnimation();
-                }
-            } catch (error) {
-                console.error("Error fetching feed:", error);
+    async function checkFeed() {
+        try {
+            // Public endpoint URL - no API key header required
+            let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        }
+            
+            let data = await response.json();
+            let latestValue = data.value;
+            console.log("Latest feed value:", latestValue);
 
+            if (latestValue === "pung") {
+                triggerPungAnimation();
+            } else if (latestValue === "chow") {
+                triggerChowAnimation();
+            }
+        } catch (error) {
+            console.error("Error fetching feed:", error);
+        }
+    }
+
+    function triggerPungAnimation() {
+        document.getElementById("animation-box").innerHTML = "🔥 PUNG! THREE OF A KIND! 🔥";
+        // Place your custom animation trigger here
+    }
+
+    function triggerChowAnimation() {
+        document.getElementById("animation-box").innerHTML = "✨ CHOW! SEQUENCE! ✨";
+        // Place your custom animation trigger here
+    }
+
+    // Poll Adafruit IO every 2 seconds
+    setInterval(checkFeed, 2000);
+</script>
         function triggerPungAnimation() {
             document.getElementById("animation-box").innerHTML = "🔥 PUNG! THREE OF A KIND! 🔥";
             // Add your custom animation code here
