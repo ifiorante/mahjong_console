@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mahjong Display</title>
+  <style>
+    body { background-color: #111; color: #fff; font-family: sans-serif; text-align: center; margin-top: 50px; }
+    img { width: 80%; max-width: 500px; border-radius: 12px; display: none; margin: 20px auto; }
+    #status { font-size: 24px; color: #aaa; }
+  </style>
+</head>
+<body>
+  <div id="status">Waiting for Mahjong Meld...</div>
+  <img id="successAnimation" src="" alt="Animation" />
+
+  <script>
+    const AIO_USERNAME = "YOUR_AIO_USERNAME";
+    const AIO_FEED = "mahjong-meld";
+    let anim = document.getElementById("successAnimation");
+    let statusDiv = document.getElementById("status");
+
+    async function checkCloudFeed() {
+      try {
+        let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
+        let data = await response.json();
+        
+        if (data.value === "pung") {
+          statusDiv.innerText = ">>> PUNG DETECTED! <<<";
+          anim.src = "https://your-username.github.io/your-repo-name/pung.gif";
+          anim.style.display = "block";
+        } else if (data.value === "chow") {
+          statusDiv.innerText = ">>> CHOW DETECTED! <<<";
+          anim.src = "https://your-username.github.io/your-repo-name/chow.gif";
+          anim.style.display = "block";
+        }
+      } catch (err) {
+        console.log("Checking cloud feed...");
+      }
+    }
+
+    // Poll the cloud feed every 2 seconds
+    setInterval(checkCloudFeed, 2000);
+  </script>
+</body>
+</html>
