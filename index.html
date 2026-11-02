@@ -38,7 +38,7 @@
         }
         #debugLog {
             width: 700px;
-            height: 100px;
+            height: 120px;
             background: #111;
             color: #3fb950;
             border: 1px solid #30363d;
@@ -56,19 +56,21 @@
         <img id="gifDisplay" src="" alt="Meld Animation">
     </div>
 
-    <div id="debugLog">Initializing...</div>
+    <div id="debugLog">Script starting...</div>
 
     <script>
         const AIO_USERNAME = "fiorante";
         const AIO_FEED = "mahjong-meld";
         
         let lastProcessedTimestamp = null;
+        let isInitialized = false;
+
         const gifDisplay = document.getElementById("gifDisplay");
         const debugLog = document.getElementById("debugLog");
         let resetTimer = null;
 
-        const PUNG_GIF_PATH = "PUNG.gif";
-        const CHOW_GIF_PATH = "CHOW.gif";
+        const PUNG_GIF_PATH = "pung.gif";
+        const CHOW_GIF_PATH = "chow.gif";
 
         // Preload images
         const pungPreload = new Image();
@@ -82,7 +84,10 @@
             debugLog.scrollTop = debugLog.scrollHeight;
         }
 
+        logMessage("Setup complete. Starting fetch function...");
+
         async function checkFeed() {
+            logMessage("-> Fetching Adafruit IO...");
             try {
                 let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
                 if (!response.ok) {
@@ -94,18 +99,22 @@
                 let latestValue = data.value;
                 let timestamp = data.created_at;
 
-                // Show what value Adafruit IO currently holds on every poll
-                logMessage(`Polling... Value: "${latestValue}"`);
+                logMessage(`Got value: "${latestValue}"`);
 
-                // If this is the first check or a new timestamp arrives
-                if (!lastProcessedTimestamp || timestamp !== lastProcessedTimestamp) {
+                if (!isInitialized) {
                     lastProcessedTimestamp = timestamp;
-                    
+                    isInitialized = true;
+                    logMessage("Baseline timestamp set: " + timestamp);
+                    return;
+                }
+
+                if (timestamp && timestamp !== lastProcessedTimestamp) {
+                    lastProcessedTimestamp = timestamp;
+                    logMessage("NEW MELD DETECTED: " + latestValue);
+
                     if (latestValue === "pung") {
-                        logMessage("--> TRIGGERING PUNG GIF!");
                         playGif(PUNG_GIF_PATH);
                     } else if (latestValue === "chow") {
-                        logMessage("--> TRIGGERING CHOW GIF!");
                         playGif(CHOW_GIF_PATH);
                     }
                 }
@@ -126,8 +135,12 @@
             }, 4000);
         }
 
-        // Poll every 2 seconds
+        // Run immediately once on load
+        checkFeed();
+
+        // Then poll every 2 seconds
         setInterval(checkFeed, 2000);
+        logMessage("Interval timer registered (every 2s).");
     </script>
 </body>
 </html>
