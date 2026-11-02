@@ -36,16 +36,15 @@
             display: none;
             object-fit: contain;
         }
-        /* Visible debug box on screen */
         #debugLog {
             width: 700px;
-            height: 80px;
+            height: 100px;
             background: #111;
             color: #3fb950;
             border: 1px solid #30363d;
             border-radius: 8px;
             padding: 10px;
-            font-size: 14px;
+            font-size: 13px;
             overflow-y: auto;
             text-align: left;
         }
@@ -57,22 +56,19 @@
         <img id="gifDisplay" src="" alt="Meld Animation">
     </div>
 
-    <!-- On-screen status box so you can see what's happening -->
-    <div id="debugLog">Initializing page...</div>
+    <div id="debugLog">Initializing...</div>
 
     <script>
         const AIO_USERNAME = "fiorante";
         const AIO_FEED = "mahjong-meld";
         
         let lastProcessedTimestamp = null;
-        let isInitialized = false;
-
         const gifDisplay = document.getElementById("gifDisplay");
         const debugLog = document.getElementById("debugLog");
         let resetTimer = null;
 
-        const PUNG_GIF_PATH = "pung.gif";
-        const CHOW_GIF_PATH = "chow.gif";
+        const PUNG_GIF_PATH = "PUNG.gif";
+        const CHOW_GIF_PATH = "CHOW.gif";
 
         // Preload images
         const pungPreload = new Image();
@@ -98,20 +94,18 @@
                 let latestValue = data.value;
                 let timestamp = data.created_at;
 
-                if (!isInitialized) {
-                    lastProcessedTimestamp = timestamp;
-                    isInitialized = true;
-                    logMessage("Connected! Baseline set: " + timestamp);
-                    return;
-                }
+                // Show what value Adafruit IO currently holds on every poll
+                logMessage(`Polling... Value: "${latestValue}"`);
 
-                if (timestamp && timestamp !== lastProcessedTimestamp) {
+                // If this is the first check or a new timestamp arrives
+                if (!lastProcessedTimestamp || timestamp !== lastProcessedTimestamp) {
                     lastProcessedTimestamp = timestamp;
-                    logMessage("NEW MELD: " + latestValue);
-
+                    
                     if (latestValue === "pung") {
+                        logMessage("--> TRIGGERING PUNG GIF!");
                         playGif(PUNG_GIF_PATH);
                     } else if (latestValue === "chow") {
+                        logMessage("--> TRIGGERING CHOW GIF!");
                         playGif(CHOW_GIF_PATH);
                     }
                 }
