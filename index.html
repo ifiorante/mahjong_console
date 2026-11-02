@@ -62,15 +62,15 @@
         const AIO_USERNAME = "fiorante";
         const AIO_FEED = "mahjong-meld";
         
-        let lastProcessedTimestamp = null;
+        let lastProcessedId = null;
         let isInitialized = false;
 
         const gifDisplay = document.getElementById("gifDisplay");
         const debugLog = document.getElementById("debugLog");
         let resetTimer = null;
 
-        const PUNG_GIF_PATH = "pung.gif";
-        const CHOW_GIF_PATH = "chow.gif";
+        const PUNG_GIF_PATH = "PUNG.gif";
+        const CHOW_GIF_PATH = "CHOW.gif";
 
         // Preload images
         const pungPreload = new Image();
@@ -84,33 +84,26 @@
             debugLog.scrollTop = debugLog.scrollHeight;
         }
 
-        logMessage("Setup complete. Starting fetch function...");
-
         async function checkFeed() {
-            logMessage("-> Fetching Adafruit IO...");
             try {
                 let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
-                if (!response.ok) {
-                    logMessage("HTTP Error: " + response.status);
-                    return;
-                }
+                if (!response.ok) return;
                 
                 let data = await response.json();
                 let latestValue = data.value;
-                let timestamp = data.created_at;
-
-                logMessage(`Got value: "${latestValue}"`);
+                let dataId = data.id; // Unique ID for this specific data post
 
                 if (!isInitialized) {
-                    lastProcessedTimestamp = timestamp;
+                    lastProcessedId = dataId;
                     isInitialized = true;
-                    logMessage("Baseline timestamp set: " + timestamp);
+                    logMessage(`Initialized. Current ID: ${dataId} (${latestValue})`);
                     return;
                 }
 
-                if (timestamp && timestamp !== lastProcessedTimestamp) {
-                    lastProcessedTimestamp = timestamp;
-                    logMessage("NEW MELD DETECTED: " + latestValue);
+                // If the Data ID changes, a brand new post was sent from the ESP32!
+                if (dataId && dataId !== lastProcessedId) {
+                    lastProcessedId = dataId;
+                    logMessage(`*** NEW MELD ID: ${dataId} -> Value: ${latestValue} ***`);
 
                     if (latestValue === "pung") {
                         playGif(PUNG_GIF_PATH);
@@ -135,12 +128,9 @@
             }, 4000);
         }
 
-        // Run immediately once on load
-        checkFeed();
-
-        // Then poll every 2 seconds
+        // Poll every 2 seconds
         setInterval(checkFeed, 2000);
-        logMessage("Interval timer registered (every 2s).");
+        logMessage("Polling started...");
     </script>
 </body>
 </html>
