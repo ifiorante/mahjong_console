@@ -10,15 +10,17 @@
             padding: 0;
             background-color: #000000;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             overflow: hidden;
+            font-family: monospace;
         }
         #animationContainer {
             position: relative;
             width: 700px;
-            height: 450px;
+            height: 400px;
             background-color: #0b0f19;
             border-radius: 16px;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
@@ -26,21 +28,37 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            margin-bottom: 20px;
         }
         #gifDisplay {
             max-width: 100%;
             max-height: 100%;
-            display: none; /* Hidden until triggered */
+            display: none;
             object-fit: contain;
+        }
+        /* Visible debug box on screen */
+        #debugLog {
+            width: 700px;
+            height: 80px;
+            background: #111;
+            color: #3fb950;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            overflow-y: auto;
+            text-align: left;
         }
     </style>
 </head>
 <body>
 
     <div id="animationContainer">
-        <!-- GIF overlay element -->
         <img id="gifDisplay" src="" alt="Meld Animation">
     </div>
+
+    <!-- On-screen status box so you can see what's happening -->
+    <div id="debugLog">Initializing page...</div>
 
     <script>
         const AIO_USERNAME = "fiorante";
@@ -50,41 +68,46 @@
         let isInitialized = false;
 
         const gifDisplay = document.getElementById("gifDisplay");
+        const debugLog = document.getElementById("debugLog");
         let resetTimer = null;
 
-        // Path to your GIFs sitting in the GitHub repository root
-        const PUNG_GIF_PATH = "PUNG.gif";
-        const CHOW_GIF_PATH = "CHOW.gif";
+        const PUNG_GIF_PATH = "pung.gif";
+        const CHOW_GIF_PATH = "chow.gif";
 
-        // Preload images into browser cache
+        // Preload images
         const pungPreload = new Image();
         pungPreload.src = PUNG_GIF_PATH;
-
         const chowPreload = new Image();
         chowPreload.src = CHOW_GIF_PATH;
+
+        function logMessage(msg) {
+            console.log(msg);
+            debugLog.innerHTML += "<br>" + msg;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
 
         async function checkFeed() {
             try {
                 let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
-                if (!response.ok) return;
+                if (!response.ok) {
+                    logMessage("HTTP Error: " + response.status);
+                    return;
+                }
                 
                 let data = await response.json();
                 let latestValue = data.value;
                 let timestamp = data.created_at;
 
-                // On the very first successful fetch, establish the baseline timestamp
-                // so we don't replay old history when the page loads.
                 if (!isInitialized) {
                     lastProcessedTimestamp = timestamp;
                     isInitialized = true;
-                    console.log("Initialized. Baseline timestamp set:", timestamp);
+                    logMessage("Connected! Baseline set: " + timestamp);
                     return;
                 }
 
-                // If a new timestamp comes in from Adafruit IO, trigger the animation!
                 if (timestamp && timestamp !== lastProcessedTimestamp) {
                     lastProcessedTimestamp = timestamp;
-                    console.log("New meld detected!", latestValue);
+                    logMessage("NEW MELD: " + latestValue);
 
                     if (latestValue === "pung") {
                         playGif(PUNG_GIF_PATH);
@@ -93,26 +116,23 @@
                     }
                 }
             } catch (error) {
-                console.error("Error fetching feed:", error);
+                logMessage("Fetch error: " + error.message);
             }
         }
 
         function playGif(gifPath) {
-            // Append timestamp cache-buster to force the GIF animation to restart from frame 0
             gifDisplay.src = gifPath + "?t=" + new Date().getTime();
             gifDisplay.style.display = "block";
 
-            // Clear any existing reset timeout
             if (resetTimer) clearTimeout(resetTimer);
 
-            // Hide GIF and return to blank screen after 4 seconds
             resetTimer = setTimeout(() => {
                 gifDisplay.style.display = "none";
                 gifDisplay.src = "";
             }, 4000);
         }
 
-        // Poll Adafruit IO every 2 seconds
+        // Poll every 2 seconds
         setInterval(checkFeed, 2000);
     </script>
 </body>
