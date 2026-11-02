@@ -15,17 +15,32 @@
             height: 100vh;
             overflow: hidden;
         }
-        #animationCanvas {
+        #animationContainer {
+            position: relative;
+            width: 700px;
+            height: 450px;
             background-color: #0b0f19;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #gifDisplay {
+            max-width: 100%;
+            max-height: 100%;
+            display: none; /* Hidden until triggered */
+            object-fit: contain;
         }
     </style>
 </head>
 <body>
 
-    <!-- Clean canvas for your animations -->
-    <canvas id="animationCanvas" width="600" height="400"></canvas>
+    <div id="animationContainer">
+        <!-- GIF overlay element -->
+        <img id="gifDisplay" src="" alt="Meld Animation">
+    </div>
 
     <script>
         const AIO_USERNAME = "fiorante";
@@ -35,18 +50,24 @@
         let isInitialLoad = true;
         const pageLoadTime = new Date().getTime();
 
-        const canvas = document.getElementById("animationCanvas");
-        const ctx = canvas.getContext("2d");
+        const gifDisplay = document.getElementById("gifDisplay");
+        let resetTimer = null;
 
-        // Initial idle screen draw
-        drawIdleState();
+        // Path to your GIFs sitting in the GitHub repository root
+        const PUNG_GIF_PATH = "pung.gif";
+        const CHOW_GIF_PATH = "chow.gif";
+
+        // Preload images into browser cache so there is no delay on tap
+        const pungPreload = new Image();
+        pungPreload.src = PUNG_GIF_PATH;
+
+        const chowPreload = new Image();
+        chowPreload.src = CHOW_GIF_PATH;
 
         async function checkFeed() {
             try {
                 let response = await fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${AIO_FEED}/data/last`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) return;
                 
                 let data = await response.json();
                 let latestValue = data.value;
@@ -64,9 +85,9 @@
                     console.log("New meld received:", latestValue);
 
                     if (latestValue === "pung") {
-                        triggerPungAnimation();
+                        playGif(PUNG_GIF_PATH);
                     } else if (latestValue === "chow") {
-                        triggerChowAnimation();
+                        playGif(CHOW_GIF_PATH);
                     }
                 }
             } catch (error) {
@@ -74,33 +95,19 @@
             }
         }
 
-        function drawIdleState() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#161b22";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Leave completely blank or draw subtle background visuals here if desired
-        }
+        function playGif(gifPath) {
+            // Append timestamp cache-buster to force the GIF animation to restart from frame 0
+            gifDisplay.src = gifPath + "?t=" + new Date().getTime();
+            gifDisplay.style.display = "block";
 
-        function triggerPungAnimation() {
-            console.log("Playing Pung Animation...");
-            
-            // --- REPLACE WITH YOUR CUSTOM PUNG ANIMATION CODE ---
-            ctx.fillStyle = "#f85149";
-            ctx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
-            
-            // Auto-clear back to idle after 4 seconds
-            setTimeout(drawIdleState, 4000);
-        }
+            // Clear any existing reset timeout
+            if (resetTimer) clearTimeout(resetTimer);
 
-        function triggerChowAnimation() {
-            console.log("Playing Chow Animation...");
-            
-            // --- REPLACE WITH YOUR CUSTOM CHOW ANIMATION CODE ---
-            ctx.fillStyle = "#3fb950";
-            ctx.fillRect(50, 50, canvas.width - 100, canvas.height - 100);
-            
-            // Auto-clear back to idle after 4 seconds
-            setTimeout(drawIdleState, 4000);
+            // Hide GIF and return to blank screen after 4 seconds
+            resetTimer = setTimeout(() => {
+                gifDisplay.style.display = "none";
+                gifDisplay.src = "";
+            }, 4000);
         }
 
         // Poll Adafruit IO every 2 seconds
