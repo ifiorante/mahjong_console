@@ -47,8 +47,7 @@
         const AIO_FEED = "mahjong-meld";
         
         let lastProcessedTimestamp = null;
-        let isInitialLoad = true;
-        const pageLoadTime = new Date().getTime();
+        let isInitialized = false;
 
         const gifDisplay = document.getElementById("gifDisplay");
         let resetTimer = null;
@@ -57,7 +56,7 @@
         const PUNG_GIF_PATH = "PUNG.gif";
         const CHOW_GIF_PATH = "CHOW.gif";
 
-        // Preload images into browser cache so there is no delay on tap
+        // Preload images into browser cache
         const pungPreload = new Image();
         pungPreload.src = PUNG_GIF_PATH;
 
@@ -72,17 +71,20 @@
                 let data = await response.json();
                 let latestValue = data.value;
                 let timestamp = data.created_at;
-                let dataTime = new Date(timestamp).getTime();
 
-                if (isInitialLoad) {
+                // On the very first successful fetch, establish the baseline timestamp
+                // so we don't replay old history when the page loads.
+                if (!isInitialized) {
                     lastProcessedTimestamp = timestamp;
-                    isInitialLoad = false;
+                    isInitialized = true;
+                    console.log("Initialized. Baseline timestamp set:", timestamp);
                     return;
                 }
 
-                if (timestamp !== lastProcessedTimestamp && dataTime > pageLoadTime) {
+                // If a new timestamp comes in from Adafruit IO, trigger the animation!
+                if (timestamp && timestamp !== lastProcessedTimestamp) {
                     lastProcessedTimestamp = timestamp;
-                    console.log("New meld received:", latestValue);
+                    console.log("New meld detected!", latestValue);
 
                     if (latestValue === "pung") {
                         playGif(PUNG_GIF_PATH);
